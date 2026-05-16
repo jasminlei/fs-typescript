@@ -1,3 +1,5 @@
+import { fileURLToPath } from 'url';
+
 interface Result {
   periodLength: number
   trainingDays: number
@@ -8,7 +10,7 @@ interface Result {
   average: number
 }
 
-const calculateExercises = (hours: number[], target: number): Result => {
+export const calculateExercises = (hours: number[], target: number): Result => {
   if (target <= 0) {
     throw new Error('target must be a positive number');
   }
@@ -54,6 +56,47 @@ const calculateExercises = (hours: number[], target: number): Result => {
   };
 };
 
+const isObject = (value: unknown): value is Record<string, unknown> => {
+  return typeof value === 'object' && value !== null;
+};
+
+const toNumber = (value: unknown): number => {
+  if (typeof value !== 'number' && typeof value !== 'string') {
+    throw new Error('malformatted parameters');
+  }
+
+  const numberValue = Number(value);
+  if (!Number.isFinite(numberValue)) {
+    throw new Error('malformatted parameters');
+  }
+
+  return numberValue;
+};
+
+export const parseExercisesBody = (
+  body: unknown,
+): { target: number; dailyExercises: number[] } => {
+  if (!isObject(body)) {
+    throw new Error('malformatted parameters');
+  }
+
+  if (!('daily_exercises' in body) || !('target' in body)) {
+    throw new Error('parameters missing');
+  }
+
+  const dailyExercisesUnknown = body.daily_exercises;
+  const targetUnknown = body.target;
+
+  if (!Array.isArray(dailyExercisesUnknown)) {
+    throw new Error('malformatted parameters');
+  }
+
+  const dailyExercises = dailyExercisesUnknown.map((v) => toNumber(v));
+  const target = toNumber(targetUnknown);
+
+  return { target, dailyExercises };
+};
+
 interface ExerciseValues {
   target: number
   hours: number[]
@@ -77,13 +120,23 @@ const parseExerciseArguments = (args: string[]): ExerciseValues => {
   };
 };
 
-try {
-  const { target, hours } = parseExerciseArguments(process.argv);
-  console.log(calculateExercises(hours, target));
-} catch (error: unknown) {
-  let errorMessage = 'something unexpected happened';
-  if (error instanceof Error) {
-    errorMessage += ' error: ' + error.message;
+const isMain = (() => {
+  try {
+    return process.argv[1] === fileURLToPath(import.meta.url);
+  } catch {
+    return false;
   }
-  console.log(errorMessage);
+})();
+
+if (isMain) {
+  try {
+    const { target, hours } = parseExerciseArguments(process.argv);
+    console.log(calculateExercises(hours, target));
+  } catch (error: unknown) {
+    let errorMessage = 'something unexpected happened';
+    if (error instanceof Error) {
+      errorMessage += ' error: ' + error.message;
+    }
+    console.log(errorMessage);
+  }
 }
