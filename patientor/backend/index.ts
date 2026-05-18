@@ -1,7 +1,8 @@
 import express, { type Response } from 'express';
 import cors from 'cors';
+import { z } from 'zod';
 import diagnosisService from './services/diagnosisService.ts';
-import type { Diagnosis, NonSensitivePatientData, Patient } from './types.ts';
+import type { Diagnosis, NonSensitivePatientData } from './types.ts';
 import patientService from './services/patientService.ts';
 import { toNewPatient } from './utils.ts';
 
@@ -30,18 +31,17 @@ app.get('/api/patients', (_req, res: Response<NonSensitivePatientData[]>) => {
   res.send(patientService.getPatients());
 });
 
-app.post('/api/patients', (req, res: Response<Patient | { error: string }>) => {
+app.post('/api/patients', (req, res) => {
   try {
     const newPatient = toNewPatient(req.body);
     const addedPatient = patientService.addPatient(newPatient);
     res.json(addedPatient);
   } catch (error: unknown) {
-    let errorMessage = 'Something went wrong.';
-    if (error instanceof Error) {
-      errorMessage += ` Error: ${error.message}`;
+    if (error instanceof z.ZodError) {
+      res.status(400).send({ error: error.issues });
+    } else {
+      res.status(400).send({ error: 'unknown error' });
     }
-
-    res.status(400).json({ error: errorMessage });
   }
 });
 

@@ -1,46 +1,18 @@
-import { Gender as GenderValues } from './types.ts';
-import type { Gender, NewPatient } from './types.ts';
+import { z } from 'zod';
 
-const isString = (value: unknown): value is string => {
-  return typeof value === 'string' || value instanceof String;
-};
+import { Gender } from './types.ts';
+import type { NewPatient } from './types.ts';
 
-const parseString = (value: unknown, fieldName: string): string => {
-  if (!isString(value)) {
-    throw new Error(`Incorrect or missing ${fieldName}`);
-  }
+const genderValues = [Gender.Male, Gender.Female, Gender.Other] as const;
 
-  return value;
-};
-
-const isGender = (value: unknown): value is Gender => {
-  return (
-    isString(value) && (Object.values(GenderValues) as string[]).includes(value)
-  );
-};
-
-const parseGender = (value: unknown): Gender => {
-  if (!isGender(value)) {
-    throw new Error('Incorrect or missing gender');
-  }
-
-  return value;
-};
-
-const isObject = (value: unknown): value is Record<string, unknown> => {
-  return typeof value === 'object' && value !== null;
-};
+const newPatientSchema = z.object({
+  name: z.string().min(1),
+  dateOfBirth: z.string().min(1),
+  ssn: z.string().min(1),
+  gender: z.enum(genderValues),
+  occupation: z.string().min(1),
+});
 
 export const toNewPatient = (value: unknown): NewPatient => {
-  if (!isObject(value)) {
-    throw new Error('Incorrect or missing patient data');
-  }
-
-  return {
-    name: parseString(value.name, 'name'),
-    dateOfBirth: parseString(value.dateOfBirth, 'dateOfBirth'),
-    ssn: parseString(value.ssn, 'ssn'),
-    gender: parseGender(value.gender),
-    occupation: parseString(value.occupation, 'occupation'),
-  };
+  return newPatientSchema.parse(value);
 };
