@@ -1,7 +1,12 @@
 import express, { type Response } from 'express';
 import cors from 'cors';
 import diagnosisService from './services/diagnosisService.ts';
-import type { Diagnosis, NonSensitivePatientData } from './types';
+import type {
+  Diagnosis,
+  NewPatient,
+  NonSensitivePatientData,
+  Patient,
+} from './types';
 import patientService from './services/patientService.ts';
 
 const app = express();
@@ -27,6 +32,21 @@ app.get('/api/diagnoses', (_req, res: Response<Diagnosis[]>) => {
 
 app.get('/api/patients', (_req, res: Response<NonSensitivePatientData[]>) => {
   res.send(patientService.getPatients());
+});
+
+app.post('/api/patients', (req, res: Response<Patient | { error: string }>) => {
+  try {
+    const newPatient = req.body as NewPatient;
+    const addedPatient = patientService.addPatient(newPatient);
+    res.json(addedPatient);
+  } catch (error: unknown) {
+    let errorMessage = 'Something went wrong.';
+    if (error instanceof Error) {
+      errorMessage += ` Error: ${error.message}`;
+    }
+
+    res.status(400).json({ error: errorMessage });
+  }
 });
 
 app.listen(PORT, () => {
