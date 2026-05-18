@@ -1,7 +1,8 @@
 import express, { type Response } from 'express';
 import cors from 'cors';
 import diagnosisService from './services/diagnosisService.ts';
-import type { Diagnosis } from './types';
+import type { Diagnosis, NonSensitivePatientData } from './types';
+import patientService from './services/patientService.ts';
 
 const app = express();
 
@@ -22,6 +23,10 @@ app.get('/api/ping', (_req, res) => {
 
 app.get('/api/diagnoses', (_req, res: Response<Diagnosis[]>) => {
   res.send(diagnosisService.getDiagnoses());
+});
+
+app.get('/api/patients', (_req, res: Response<NonSensitivePatientData[]>) => {
+  res.send(patientService.getPatients());
 });
 
 app.listen(PORT, () => {
