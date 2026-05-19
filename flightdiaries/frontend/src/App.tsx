@@ -11,6 +11,8 @@ import {
   type NonSensitiveDiaryEntry,
   type Visibility,
   type Weather,
+  Visibility as VisibilityValues,
+  Weather as WeatherValues,
 } from './types';
 
 const App = () => {
@@ -20,9 +22,12 @@ const App = () => {
   const errorTimeoutRef = useRef<number | null>(null);
 
   const [date, setDate] = useState('');
-  const [weather, setWeather] = useState('');
-  const [visibility, setVisibility] = useState('');
+  const [weather, setWeather] = useState<Weather>('sunny');
+  const [visibility, setVisibility] = useState<Visibility>('great');
   const [comment, setComment] = useState('');
+
+  const weatherOptions = Object.values(WeatherValues) as Weather[];
+  const visibilityOptions = Object.values(VisibilityValues) as Visibility[];
 
   const reloadDiaries = useCallback(async () => {
     const data = await diaryService.getAll();
@@ -59,8 +64,8 @@ const App = () => {
 
     const entry: NewDiaryEntry = {
       date,
-      weather: weather as Weather,
-      visibility: visibility as Visibility,
+      weather,
+      visibility,
       comment: comment.trim() ? comment.trim() : undefined,
     };
 
@@ -68,8 +73,8 @@ const App = () => {
       await diaryService.create(entry);
       await reloadDiaries();
       setDate('');
-      setWeather('');
-      setVisibility('');
+      setWeather('sunny');
+      setVisibility('great');
       setComment('');
     } catch (caught: unknown) {
       const message =
@@ -104,17 +109,33 @@ const App = () => {
           </div>
           <div>
             weather
-            <input
-              value={weather}
-              onChange={(e) => setWeather(e.target.value)}
-            />
+            {weatherOptions.map((option) => (
+              <label key={option}>
+                <input
+                  type="radio"
+                  name="weather"
+                  value={option}
+                  checked={weather === option}
+                  onChange={() => setWeather(option)}
+                />
+                {option}
+              </label>
+            ))}
           </div>
           <div>
             visibility
-            <input
-              value={visibility}
-              onChange={(e) => setVisibility(e.target.value)}
-            />
+            {visibilityOptions.map((option) => (
+              <label key={option}>
+                <input
+                  type="radio"
+                  name="visibility"
+                  value={option}
+                  checked={visibility === option}
+                  onChange={() => setVisibility(option)}
+                />
+                {option}
+              </label>
+            ))}
           </div>
           <div>
             comment
