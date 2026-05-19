@@ -1,6 +1,10 @@
-type CoursePart = {
-  name: string;
-  exerciseCount: number;
+import { courseName, courseParts } from '../courseData';
+import type { CoursePart } from '../types';
+
+const assertNever = (value: never): never => {
+  throw new Error(
+    `Unhandled discriminated union member: ${JSON.stringify(value)}`,
+  );
 };
 
 type HeaderProps = {
@@ -15,13 +19,66 @@ type ContentProps = {
   courseParts: CoursePart[];
 };
 
+type PartProps = {
+  part: CoursePart;
+};
+
+const Part = ({ part }: PartProps) => {
+  switch (part.kind) {
+    case 'basic':
+      return (
+        <p>
+          <b>
+            {part.name} {part.exerciseCount}
+          </b>
+          <br />
+          {part.description}
+        </p>
+      );
+    case 'group':
+      return (
+        <p>
+          <b>
+            {part.name} {part.exerciseCount}
+          </b>
+          <br />
+          project exercises {part.groupProjectCount}
+        </p>
+      );
+    case 'background':
+      return (
+        <p>
+          <b>
+            {part.name} {part.exerciseCount}
+          </b>
+          <br />
+          {part.description}
+          <br />
+          submit to {part.backgroundMaterial}
+        </p>
+      );
+    case 'special':
+      return (
+        <p>
+          <b>
+            {part.name} {part.exerciseCount}
+          </b>
+          <br />
+          {part.description}
+          <br />
+          required skills: {part.requirements.join(', ')}
+        </p>
+      );
+    default:
+      return assertNever(part);
+  }
+};
+
 const Content = ({ courseParts }: ContentProps) => {
   return (
     <>
       {courseParts.map((part) => (
-        <p key={part.name}>
-          {part.name} {part.exerciseCount}
-        </p>
+        <Part key={part.name} part={part} />
       ))}
     </>
   );
@@ -41,22 +98,6 @@ const Total = ({ courseParts }: TotalProps) => {
 };
 
 const App = () => {
-  const courseName = 'Half Stack application development';
-  const courseParts = [
-    {
-      name: 'Fundamentals',
-      exerciseCount: 10,
-    },
-    {
-      name: 'Using props to pass data',
-      exerciseCount: 7,
-    },
-    {
-      name: 'Deeper type usage',
-      exerciseCount: 14,
-    },
-  ];
-
   return (
     <div>
       <Header courseName={courseName} />
