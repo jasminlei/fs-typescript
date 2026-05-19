@@ -1,5 +1,6 @@
 import {
   type SubmitEventHandler,
+  useRef,
   useCallback,
   useEffect,
   useState,
@@ -16,6 +17,7 @@ const App = () => {
   const [diaries, setDiaries] = useState<NonSensitiveDiaryEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const errorTimeoutRef = useRef<number | null>(null);
 
   const [date, setDate] = useState('');
   const [weather, setWeather] = useState('');
@@ -43,6 +45,14 @@ const App = () => {
     void fetchData();
   }, [reloadDiaries]);
 
+  useEffect(() => {
+    return () => {
+      if (errorTimeoutRef.current) {
+        window.clearTimeout(errorTimeoutRef.current);
+      }
+    };
+  }, []);
+
   const addDiary: SubmitEventHandler<HTMLFormElement> = async (event) => {
     event.preventDefault();
     setError(null);
@@ -65,6 +75,13 @@ const App = () => {
       const message =
         caught instanceof Error ? caught.message : 'Unknown error';
       setError(message);
+
+      if (errorTimeoutRef.current) {
+        window.clearTimeout(errorTimeoutRef.current);
+      }
+      errorTimeoutRef.current = window.setTimeout(() => {
+        setError(null);
+      }, 5000);
     }
   };
 
