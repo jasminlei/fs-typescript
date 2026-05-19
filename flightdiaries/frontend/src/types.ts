@@ -23,9 +23,12 @@ export type DiaryEntryBase = {
   visibility: Visibility;
 };
 
-export type DiaryEntry = DiaryEntryBase & {
-  id: number;
+export type NewDiaryEntry = DiaryEntryBase & {
   comment?: string;
+};
+
+export type DiaryEntry = NewDiaryEntry & {
+  id: number;
 };
 
 export type NonSensitiveDiaryEntry = Omit<DiaryEntry, 'comment'>;
