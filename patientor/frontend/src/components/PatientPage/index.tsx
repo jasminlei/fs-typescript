@@ -8,7 +8,10 @@ import type {
   Diagnosis,
   Entry,
   HealthCheckRating,
+  NewEntry,
   NewHealthCheckEntry,
+  NewHospitalEntry,
+  NewOccupationalHealthcareEntry,
   Patient,
 } from '../../types';
 
@@ -113,10 +116,20 @@ const PatientPage = ({ diagnoses }: Props) => {
   const [error, setError] = useState<string | null>(null);
   const [entryError, setEntryError] = useState<string | null>(null);
 
+  const [entryType, setEntryType] = useState<Entry['type']>('HealthCheck');
+
   const [entryDate, setEntryDate] = useState('');
   const [entrySpecialist, setEntrySpecialist] = useState('');
   const [entryDescription, setEntryDescription] = useState('');
   const [entryDiagnosisCodes, setEntryDiagnosisCodes] = useState('');
+
+  const [dischargeDate, setDischargeDate] = useState('');
+  const [dischargeCriteria, setDischargeCriteria] = useState('');
+
+  const [employerName, setEmployerName] = useState('');
+  const [sickLeaveStartDate, setSickLeaveStartDate] = useState('');
+  const [sickLeaveEndDate, setSickLeaveEndDate] = useState('');
+
   const [entryHealthCheckRating, setEntryHealthCheckRating] = useState('0');
 
   const diagnosisNameByCode = useMemo(() => {
@@ -176,16 +189,52 @@ const PatientPage = ({ diagnoses }: Props) => {
       .map((code) => code.trim())
       .filter(Boolean);
 
-    const newEntry: NewHealthCheckEntry = {
-      type: 'HealthCheck',
+    const base = {
       date: entryDate,
       specialist: entrySpecialist,
       description: entryDescription,
       diagnosisCodes: diagnosisCodes.length ? diagnosisCodes : undefined,
-      healthCheckRating: Number(
-        entryHealthCheckRating,
-      ) as unknown as HealthCheckRating,
     };
+
+    const newEntry: NewEntry = (() => {
+      switch (entryType) {
+        case 'Hospital':
+          return {
+            type: 'Hospital',
+            ...base,
+            discharge: {
+              date: dischargeDate,
+              criteria: dischargeCriteria,
+            },
+          } satisfies NewHospitalEntry;
+
+        case 'OccupationalHealthcare':
+          return {
+            type: 'OccupationalHealthcare',
+            ...base,
+            employerName,
+            sickLeave:
+              sickLeaveStartDate.trim() && sickLeaveEndDate.trim()
+                ? {
+                    startDate: sickLeaveStartDate,
+                    endDate: sickLeaveEndDate,
+                  }
+                : undefined,
+          } satisfies NewOccupationalHealthcareEntry;
+
+        case 'HealthCheck':
+          return {
+            type: 'HealthCheck',
+            ...base,
+            healthCheckRating: Number(
+              entryHealthCheckRating,
+            ) as unknown as HealthCheckRating,
+          } satisfies NewHealthCheckEntry;
+
+        default:
+          return assertNever(entryType);
+      }
+    })();
 
     try {
       const addedEntry = await patientService.addEntry(id, newEntry);
@@ -197,6 +246,13 @@ const PatientPage = ({ diagnoses }: Props) => {
       setEntrySpecialist('');
       setEntryDescription('');
       setEntryDiagnosisCodes('');
+
+      setDischargeDate('');
+      setDischargeCriteria('');
+      setEmployerName('');
+      setSickLeaveStartDate('');
+      setSickLeaveEndDate('');
+
       setEntryHealthCheckRating('0');
     } catch (caught: unknown) {
       const message =
@@ -217,12 +273,23 @@ const PatientPage = ({ diagnoses }: Props) => {
       <Typography>occupation: {patient.occupation}</Typography>
 
       <Typography variant='h6' sx={{ marginTop: 2 }}>
-        add new entry (HealthCheck)
+        add new entry
       </Typography>
       {entryError ? (
         <Typography color='error'>Error: {entryError}</Typography>
       ) : null}
       <form onSubmit={addEntry}>
+        <div>
+          type
+          <select
+            value={entryType}
+            onChange={(e) => setEntryType(e.target.value as Entry['type'])}
+          >
+            <option value='HealthCheck'>HealthCheck</option>
+            <option value='Hospital'>Hospital</option>
+            <option value='OccupationalHealthcare'>OccupationalHealthcare</option>
+          </select>
+        </div>
         <div>
           date
           <input
@@ -251,13 +318,62 @@ const PatientPage = ({ diagnoses }: Props) => {
             onChange={(e) => setEntryDiagnosisCodes(e.target.value)}
           />
         </div>
-        <div>
-          health check rating (0-3)
-          <input
-            value={entryHealthCheckRating}
-            onChange={(e) => setEntryHealthCheckRating(e.target.value)}
-          />
-        </div>
+
+        {entryType === 'Hospital' ? (
+          <>
+            <div>
+              discharge date
+              <input
+                value={dischargeDate}
+                onChange={(e) => setDischargeDate(e.target.value)}
+              />
+            </div>
+            <div>
+              discharge criteria
+              <input
+                value={dischargeCriteria}
+                onChange={(e) => setDischargeCriteria(e.target.value)}
+              />
+            </div>
+          </>
+        ) : null}
+
+        {entryType === 'OccupationalHealthcare' ? (
+          <>
+            <div>
+              employer name
+              <input
+                value={employerName}
+                onChange={(e) => setEmployerName(e.target.value)}
+              />
+            </div>
+            <div>
+              sick leave start date
+              <input
+                value={sickLeaveStartDate}
+                onChange={(e) => setSickLeaveStartDate(e.target.value)}
+              />
+            </div>
+            <div>
+              sick leave end date
+              <input
+                value={sickLeaveEndDate}
+                onChange={(e) => setSickLeaveEndDate(e.target.value)}
+              />
+            </div>
+          </>
+        ) : null}
+
+        {entryType === 'HealthCheck' ? (
+          <div>
+            health check rating (0-3)
+            <input
+              value={entryHealthCheckRating}
+              onChange={(e) => setEntryHealthCheckRating(e.target.value)}
+            />
+          </div>
+        ) : null}
+
         <button type='submit'>add entry</button>
       </form>
 
