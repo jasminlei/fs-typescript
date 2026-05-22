@@ -190,7 +190,9 @@ const PatientPage = ({ diagnoses }: Props) => {
 
   const handleDiagnosisCodesChange = (event: SelectChangeEvent<string[]>) => {
     const value = event.target.value;
-    setEntryDiagnosisCodes(typeof value === 'string' ? value.split(',') : value);
+    setEntryDiagnosisCodes(
+      typeof value === 'string' ? value.split(',') : value,
+    );
   };
 
   const addEntry: SubmitEventHandler<HTMLFormElement> = async (event) => {
@@ -207,7 +209,9 @@ const PatientPage = ({ diagnoses }: Props) => {
       date: entryDate,
       specialist: entrySpecialist,
       description: entryDescription,
-      diagnosisCodes: entryDiagnosisCodes.length ? entryDiagnosisCodes : undefined,
+      diagnosisCodes: entryDiagnosisCodes.length
+        ? entryDiagnosisCodes
+        : undefined,
     };
 
     const newEntry: NewEntry = (() => {
@@ -365,7 +369,9 @@ const PatientPage = ({ diagnoses }: Props) => {
           >
             {diagnoses.map((diagnosis) => (
               <MenuItem key={diagnosis.code} value={diagnosis.code}>
-                <Checkbox checked={entryDiagnosisCodes.includes(diagnosis.code)} />
+                <Checkbox
+                  checked={entryDiagnosisCodes.includes(diagnosis.code)}
+                />
                 <ListItemText primary={`${diagnosis.code} ${diagnosis.name}`} />
               </MenuItem>
             ))}
@@ -433,13 +439,17 @@ const PatientPage = ({ diagnoses }: Props) => {
 
         {entryType === 'HealthCheck' ? (
           <FormControl fullWidth size='small' margin='dense'>
-            <InputLabel id='health-check-rating-label'>health rating</InputLabel>
+            <InputLabel id='health-check-rating-label'>
+              health rating
+            </InputLabel>
             <Select
               labelId='health-check-rating-label'
               value={entryHealthCheckRating}
               label='health rating'
               onChange={(e) =>
-                setEntryHealthCheckRating(Number(e.target.value) as HealthCheckRating)
+                setEntryHealthCheckRating(
+                  Number(e.target.value) as HealthCheckRating,
+                )
               }
             >
               <MenuItem value={0}>0 (Healthy)</MenuItem>
@@ -451,7 +461,7 @@ const PatientPage = ({ diagnoses }: Props) => {
         ) : null}
 
         <Button type='submit' variant='contained' size='small'>
-          add entry
+          Add New Entry
         </Button>
       </Box>
 
