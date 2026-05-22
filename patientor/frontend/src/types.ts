@@ -12,13 +12,19 @@ export const Gender = {
 
 export type Gender = (typeof Gender)[keyof typeof Gender];
 
-export interface Patient {
+export type Entry = unknown;
+
+export interface NonSensitivePatient {
   id: string;
   name: string;
   occupation: string;
   gender: Gender;
-  ssn?: string;
-  dateOfBirth?: string;
+  dateOfBirth: string;
+}
+
+export interface Patient extends NonSensitivePatient {
+  ssn: string;
+  entries: Entry[];
 }
 
 export type PatientFormValues = Omit<Patient, 'id' | 'entries'>;
