@@ -19,13 +19,20 @@ const addPatient = (patient: NewPatient): Patient => {
   const newPatient: Patient = {
     id,
     ...patient,
+    entries: [],
   };
 
   patients.push(newPatient);
   return newPatient;
 };
 
+const getPatient = (id: string): Patient | undefined => {
+  const patientToFind = patients.find((patient) => patient.id === id);
+  return patientToFind;
+};
+
 export default {
   getPatients,
   addPatient,
+  getPatient,
 };

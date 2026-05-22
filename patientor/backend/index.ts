@@ -1,8 +1,8 @@
-import express, { type Response } from 'express';
+import express, { type Request, type Response } from 'express';
 import cors from 'cors';
 import { z } from 'zod';
 import diagnosisService from './services/diagnosisService.ts';
-import type { Diagnosis, NonSensitivePatientData } from './types.ts';
+import type { Diagnosis, NonSensitivePatientData, Patient } from './types.ts';
 import patientService from './services/patientService.ts';
 import { toNewPatient } from './utils.ts';
 
@@ -43,6 +43,17 @@ app.post('/api/patients', (req, res) => {
       res.status(400).send({ error: 'unknown error' });
     }
   }
+});
+
+app.get('/api/patients/:id', (req: Request<{ id: string }>, res: Response) => {
+  const patient = patientService.getPatient(req.params.id);
+
+  if (!patient) {
+    res.sendStatus(404);
+    return;
+  }
+
+  res.json(patient satisfies Patient);
 });
 
 app.listen(PORT, () => {
