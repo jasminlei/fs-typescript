@@ -1,15 +1,117 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { Box, Typography } from '@mui/material';
 
 import patientService from '../../services/patients';
-import type { Patient } from '../../types';
+import HealthRatingBar from '../HealthRatingBar';
+import type { Diagnosis, Entry, Patient } from '../../types';
 
-const PatientPage = () => {
+const assertNever = (value: never): never => {
+  throw new Error(`Unhandled entry type: ${JSON.stringify(value)}`);
+};
+
+interface Props {
+  diagnoses: Diagnosis[];
+}
+
+const DiagnosisCodes = ({
+  codes,
+  diagnosisNameByCode,
+}: {
+  codes: string[];
+  diagnosisNameByCode: Record<string, string>;
+}) => {
+  return (
+    <ul>
+      {codes.map((code) => (
+        <li key={code}>
+          {code} {diagnosisNameByCode[code] ?? ''}
+        </li>
+      ))}
+    </ul>
+  );
+};
+
+const EntryDetails = ({
+  entry,
+  diagnosisNameByCode,
+}: {
+  entry: Entry;
+  diagnosisNameByCode: Record<string, string>;
+}) => {
+  switch (entry.type) {
+    case 'Hospital':
+      return (
+        <Box sx={{ border: '1px solid #ccc', padding: 1, marginY: 1 }}>
+          <Typography>
+            {entry.date} <i>{entry.description}</i>
+          </Typography>
+          <Typography>discharge: {entry.discharge.date}</Typography>
+          <Typography>criteria: {entry.discharge.criteria}</Typography>
+          {entry.diagnosisCodes ? (
+            <DiagnosisCodes
+              codes={entry.diagnosisCodes}
+              diagnosisNameByCode={diagnosisNameByCode}
+            />
+          ) : null}
+          <Typography>specialist: {entry.specialist}</Typography>
+        </Box>
+      );
+    case 'OccupationalHealthcare':
+      return (
+        <Box sx={{ border: '1px solid #ccc', padding: 1, marginY: 1 }}>
+          <Typography>
+            {entry.date} <i>{entry.description}</i>
+          </Typography>
+          <Typography>employer: {entry.employerName}</Typography>
+          {entry.sickLeave ? (
+            <Typography>
+              sick leave: {entry.sickLeave.startDate} -{' '}
+              {entry.sickLeave.endDate}
+            </Typography>
+          ) : null}
+          {entry.diagnosisCodes ? (
+            <DiagnosisCodes
+              codes={entry.diagnosisCodes}
+              diagnosisNameByCode={diagnosisNameByCode}
+            />
+          ) : null}
+          <Typography>specialist: {entry.specialist}</Typography>
+        </Box>
+      );
+    case 'HealthCheck':
+      return (
+        <Box sx={{ border: '1px solid #ccc', padding: 1, marginY: 1 }}>
+          <Typography>
+            {entry.date} <i>{entry.description}</i>
+          </Typography>
+          <HealthRatingBar rating={entry.healthCheckRating} showText />
+          {entry.diagnosisCodes ? (
+            <DiagnosisCodes
+              codes={entry.diagnosisCodes}
+              diagnosisNameByCode={diagnosisNameByCode}
+            />
+          ) : null}
+          <Typography>specialist: {entry.specialist}</Typography>
+        </Box>
+      );
+    default:
+      return assertNever(entry);
+  }
+};
+
+const PatientPage = ({ diagnoses }: Props) => {
   const { id } = useParams<{ id: string }>();
   const [patient, setPatient] = useState<Patient | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const diagnosisNameByCode = useMemo(() => {
+    return diagnoses.reduce<Record<string, string>>((acc, diagnosis) => {
+      acc[diagnosis.code] = diagnosis.name;
+      return acc;
+    }, {});
+  }, [diagnoses]);
 
   useEffect(() => {
     if (!id) {
@@ -60,7 +162,17 @@ const PatientPage = () => {
       <Typography variant='h6' sx={{ marginTop: 2 }}>
         entries
       </Typography>
-      <Typography>{patient.entries.length}</Typography>
+      {patient.entries.length === 0 ? (
+        <Typography>No entries</Typography>
+      ) : (
+        patient.entries.map((entry) => (
+          <EntryDetails
+            key={entry.id}
+            entry={entry}
+            diagnosisNameByCode={diagnosisNameByCode}
+          />
+        ))
+      )}
     </Box>
   );
 };
