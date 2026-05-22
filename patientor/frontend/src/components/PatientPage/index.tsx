@@ -1,10 +1,16 @@
-import { useEffect, useMemo, useState } from 'react';
+import { type SubmitEventHandler, useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { Box, Typography } from '@mui/material';
 
 import patientService from '../../services/patients';
 import HealthRatingBar from '../HealthRatingBar';
-import type { Diagnosis, Entry, Patient } from '../../types';
+import type {
+  Diagnosis,
+  Entry,
+  HealthCheckRating,
+  NewHealthCheckEntry,
+  Patient,
+} from '../../types';
 
 const assertNever = (value: never): never => {
   throw new Error(`Unhandled entry type: ${JSON.stringify(value)}`);
@@ -105,6 +111,13 @@ const PatientPage = ({ diagnoses }: Props) => {
   const [patient, setPatient] = useState<Patient | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [entryError, setEntryError] = useState<string | null>(null);
+
+  const [entryDate, setEntryDate] = useState('');
+  const [entrySpecialist, setEntrySpecialist] = useState('');
+  const [entryDescription, setEntryDescription] = useState('');
+  const [entryDiagnosisCodes, setEntryDiagnosisCodes] = useState('');
+  const [entryHealthCheckRating, setEntryHealthCheckRating] = useState('0');
 
   const diagnosisNameByCode = useMemo(() => {
     return diagnoses.reduce<Record<string, string>>((acc, diagnosis) => {
@@ -148,6 +161,50 @@ const PatientPage = ({ diagnoses }: Props) => {
     return <Typography>No patient data.</Typography>;
   }
 
+  const addEntry: SubmitEventHandler<HTMLFormElement> = async (event) => {
+    event.preventDefault();
+
+    if (!id) {
+      setEntryError('Missing patient id');
+      return;
+    }
+
+    setEntryError(null);
+
+    const diagnosisCodes = entryDiagnosisCodes
+      .split(',')
+      .map((code) => code.trim())
+      .filter(Boolean);
+
+    const newEntry: NewHealthCheckEntry = {
+      type: 'HealthCheck',
+      date: entryDate,
+      specialist: entrySpecialist,
+      description: entryDescription,
+      diagnosisCodes: diagnosisCodes.length ? diagnosisCodes : undefined,
+      healthCheckRating: Number(
+        entryHealthCheckRating,
+      ) as unknown as HealthCheckRating,
+    };
+
+    try {
+      const addedEntry = await patientService.addEntry(id, newEntry);
+      setPatient((prev) =>
+        prev ? { ...prev, entries: prev.entries.concat(addedEntry) } : prev,
+      );
+
+      setEntryDate('');
+      setEntrySpecialist('');
+      setEntryDescription('');
+      setEntryDiagnosisCodes('');
+      setEntryHealthCheckRating('0');
+    } catch (caught: unknown) {
+      const message =
+        caught instanceof Error ? caught.message : 'Unknown error';
+      setEntryError(message);
+    }
+  };
+
   return (
     <Box>
       <Typography variant='h5' sx={{ marginBottom: 1 }}>
@@ -158,6 +215,51 @@ const PatientPage = ({ diagnoses }: Props) => {
       <Typography>date of birth: {patient.dateOfBirth}</Typography>
       <Typography>gender: {patient.gender}</Typography>
       <Typography>occupation: {patient.occupation}</Typography>
+
+      <Typography variant='h6' sx={{ marginTop: 2 }}>
+        add new entry (HealthCheck)
+      </Typography>
+      {entryError ? (
+        <Typography color='error'>Error: {entryError}</Typography>
+      ) : null}
+      <form onSubmit={addEntry}>
+        <div>
+          date
+          <input
+            value={entryDate}
+            onChange={(e) => setEntryDate(e.target.value)}
+          />
+        </div>
+        <div>
+          specialist
+          <input
+            value={entrySpecialist}
+            onChange={(e) => setEntrySpecialist(e.target.value)}
+          />
+        </div>
+        <div>
+          description
+          <input
+            value={entryDescription}
+            onChange={(e) => setEntryDescription(e.target.value)}
+          />
+        </div>
+        <div>
+          diagnosis codes (comma separated)
+          <input
+            value={entryDiagnosisCodes}
+            onChange={(e) => setEntryDiagnosisCodes(e.target.value)}
+          />
+        </div>
+        <div>
+          health check rating (0-3)
+          <input
+            value={entryHealthCheckRating}
+            onChange={(e) => setEntryHealthCheckRating(e.target.value)}
+          />
+        </div>
+        <button type='submit'>add entry</button>
+      </form>
 
       <Typography variant='h6' sx={{ marginTop: 2 }}>
         entries
